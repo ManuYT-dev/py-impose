@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py-impose"
+version = "0.1.0"
+authors = [
+  { name="Manuel", email="manuellucastrauss@gmx.at" },
+]
+description = "A professional Python library for PDF imposition, resizing, and tiling."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: Free for non-commercial use",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Graphics :: Presentation",
+]
+dependencies = [
+    "pymupdf>=1.23.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ManuYT-dev/py-impose"
+"Bug Tracker" = "https://github.com/ManuYT-dev/py-impose/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

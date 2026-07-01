@@ -18,8 +18,8 @@ def run_local_test():
 
     current_dir = Path(__file__).resolve().parent
 
-    input_file = current_dir / "test_input.pdf"
-    output_file = current_dir / "test_output_sra3.pdf"
+    input_file = current_dir / "Files" / "test_input.pdf"
+    output_file = current_dir / "Files" / "output.pdf"
 
     if not input_file.exists():
         print(f"\n[ERROR] Please drop a test PDF file here: {input_file}")
@@ -30,15 +30,16 @@ def run_local_test():
         input_path=input_file,
         output_path=output_file,
         tile_to=PaperTypes.SRA3.value,
-        resize_to=PaperTypes.A5.value,
+        resize_to=PaperTypes.A7.value,
     )
 
     processor.update_value(
-        tile__inner_spacing_mm=1,
+        tile__inner_spacing=40,
         tile__line_thickness=2,
-        tile__outer_margin_mm=3.0,
+        tile__outer_margin=3.0,
         tile__draw_lines=True,
-        bleed__default_bleed_pt=90,
+        bleed__default_bleed=10,
+        bleed__scaleForBleed=False,
     )
 
     processor.run()

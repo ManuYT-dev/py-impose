@@ -23,18 +23,12 @@ class PDFProcessor:
             output_path: str | Path,
             tile_to: PageSize = PaperTypes.SRA3,
             resize_to: PageSize | None = None,
-            anzahl: int = 1,
-            farbe: bool = False,
-            beidseitig: bool = False,
             bindung: str | None = None,
     ):
         self.input_path = input_path
         self.output_path = output_path
         self.tile_to = tile_to
         self.resize_to = resize_to
-        self.anzahl = anzahl
-        self.farbe = farbe
-        self.beidseitig = beidseitig
         self.bindung = bindung
         self.pages: list[pymupdf.Page] = []
 
@@ -43,10 +37,6 @@ class PDFProcessor:
         self._bleed_kwargs = {}
         self._tile_kwargs = {}
         self._export_kwargs = {}
-
-    # ------------------------------------------------------------------ #
-    #  Pipeline                                                            #
-    # ------------------------------------------------------------------ #
 
     def update_value(self, **kwargs) -> "PDFProcessor":
         mapping = {
@@ -112,7 +102,11 @@ class PDFProcessor:
             new_pages = []
             for page in self.pages:
                 doc = page.parent
-                pb = PageBleedBox(page, doc, self._bleed_kwargs.get("default_bleed_pt", PageSize.mm_to_points(5)))
+
+                bleed_val = self._bleed_kwargs.get("default_bleed", PageSize.mm_to_points(5))
+                scale_val = self._bleed_kwargs.get("scaleForBleed", True)
+                pb = PageBleedBox(page, doc, bleed_val, scale_val)
+
                 new_pages.append(pb.page)  # neue Page zurückschreiben
             self.pages = new_pages
         except Exception as e:
@@ -128,8 +122,8 @@ class PDFProcessor:
             output_size = self._tile_kwargs.get("output_size") or self.tile_to
             tiler = PageTiler(
                 output_size,
-                inner_spacing_mm=self._tile_kwargs.get("inner_spacing_mm"),
-                outer_margin_mm=self._tile_kwargs.get("outer_margin_mm"),
+                inner_spacing=self._tile_kwargs.get("inner_spacing"),
+                outer_margin=self._tile_kwargs.get("outer_margin"),
                 line_thickness=self._tile_kwargs.get("line_thickness"),
                 draw_lines=self._tile_kwargs.get("draw_lines", True)
             )
@@ -159,9 +153,3 @@ class PDFProcessor:
         """Run the full processing pipeline using any pre-configured settings."""
         logger.info("[PDFProcessor] Starting pipeline for '%s'", self.input_path)
         return self.load().resize().bleed().tile().export()
-
-    def __repr__(self):
-        return (
-            f"PDFProcessor(input={self.input_path}, anzahl={self.anzahl}, "
-            f"farbe={self.farbe}, beidseitig={self.beidseitig})"
-        )

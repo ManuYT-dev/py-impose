@@ -4,10 +4,12 @@ from .page_resizer import PageResizer
 
 
 class PageBleedBox:
-    def __init__(self, page: pymupdf.Page, doc: pymupdf.Document, default_bleed_pt: float = PageSize.cm_to_points(5)):
+    def __init__(self, page: pymupdf.Page, doc: pymupdf.Document,
+                 default_bleed: float = PageSize.cm_to_points(5), scaleForBleed: bool = True):
         self.page = page
         self.doc = doc
-        self.default_bleed_pt = default_bleed_pt
+        self.default_bleed = default_bleed
+        self.scaleForBleed = scaleForBleed
         self._ensure_bleedbox()
 
     def _has_explicit_bleedbox(self) -> bool:
@@ -16,13 +18,14 @@ class PageBleedBox:
 
     def _scale_page_content(self):
         trim = self.page.trimbox
-        bleed = self.default_bleed_pt
+        bleed = self.default_bleed
 
         new_w = trim.width + 2 * bleed
         new_h = trim.height + 2 * bleed
 
-        self.page = PageResizer(PageSize(width=int(round(new_w)), height=int(round(new_h)))).resize_page(
-            self.page)
+        if self.scaleForBleed:
+            self.page = PageResizer(PageSize(width=int(round(new_w)), height=int(round(new_h)))).resize_page(
+                self.page)
 
         doc = self.page.parent
         media = self.page.mediabox  # exakte MediaBox nach Resize

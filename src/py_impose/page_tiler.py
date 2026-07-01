@@ -12,8 +12,8 @@ class PageTiler:
     HORIZONTAL = "HORIZONTAL"
     VERTICAL = "VERTICAL"
 
-    def __init__(self, target_size: PageSize, inner_spacing_mm: float = None,
-                 outer_margin_mm: float = None, line_thickness: float = None, draw_lines: bool = True):
+    def __init__(self, target_size: PageSize, inner_spacing: float = None,
+                 outer_margin: float = None, line_thickness: float = None, draw_lines: bool = True):
         try:
             self.target_width = float(target_size.width)
             self.target_height = float(target_size.height)
@@ -22,17 +22,17 @@ class PageTiler:
             self.target_width = 0.0
             self.target_height = 0.0
 
-        self.inner_spacing_mm = inner_spacing_mm or PageSize.mm_to_points(2)
-        self.outer_margin_mm = outer_margin_mm or PageSize.mm_to_points(2)
+        self.inner_spacing = inner_spacing or PageSize.mm_to_points(2)
+        self.outer_margin = outer_margin or PageSize.mm_to_points(2)
         self.line_thickness = line_thickness or PageSize.mm_to_points(1)
         self.draw_lines = draw_lines
 
     def compute_grid(self, width: float, height: float) -> tuple[int, int]:
         try:
-            usable_w = self.target_width - 2 * self.outer_margin_mm
-            usable_h = self.target_height - 2 * self.outer_margin_mm
-            cols = max(0, int((usable_w + self.inner_spacing_mm) // (width + self.inner_spacing_mm)))
-            rows = max(0, int((usable_h + self.inner_spacing_mm) // (height + self.inner_spacing_mm)))
+            usable_w = self.target_width - 2 * self.outer_margin
+            usable_h = self.target_height - 2 * self.outer_margin
+            cols = max(0, int((usable_w + self.inner_spacing) // (width + self.inner_spacing)))
+            rows = max(0, int((usable_h + self.inner_spacing) // (height + self.inner_spacing)))
             return cols, rows
         except ZeroDivisionError:
             logger.error(f"[PageTiler] compute_grid: tile size is zero (width={width}, height={height}).")
@@ -60,12 +60,12 @@ class PageTiler:
             tile_w = tile.rect.height if rotation == 90 else tile.rect.width
             tile_h = tile.rect.width if rotation == 90 else tile.rect.height
 
-            content_w = cols * tile_w + (cols - 1) * self.inner_spacing_mm
-            content_h = rows * tile_h + (rows - 1) * self.inner_spacing_mm
+            content_w = cols * tile_w + (cols - 1) * self.inner_spacing
+            content_h = rows * tile_h + (rows - 1) * self.inner_spacing
 
             content_page = pymupdf.open().new_page(width=content_w, height=content_h)
-            stride_x = tile_w + self.inner_spacing_mm
-            stride_y = tile_h + self.inner_spacing_mm
+            stride_x = tile_w + self.inner_spacing
+            stride_y = tile_h + self.inner_spacing
 
             for row in range(rows):
                 for col in range(cols):
@@ -154,8 +154,8 @@ class PageTiler:
         float, float]:
         cols, rows = grid
         tile_w, tile_h = self._get_tile_dimensions(tile, rotation)
-        margin_height = (finale_page.mediabox.height - (rows * tile_h + (rows - 1) * self.inner_spacing_mm)) / 2
-        margin_width = (finale_page.mediabox.width - (cols * tile_w + (cols - 1) * self.inner_spacing_mm)) / 2
+        margin_height = (finale_page.mediabox.height - (rows * tile_h + (rows - 1) * self.inner_spacing)) / 2
+        margin_width = (finale_page.mediabox.width - (cols * tile_w + (cols - 1) * self.inner_spacing)) / 2
         return margin_width, margin_height
 
     def draw_corner_marks(self, grid: tuple[int, int], finale_page: pymupdf.Page, tile: Tile,
@@ -182,7 +182,7 @@ class PageTiler:
 
             # Immer beide Seiten zeichnen — auch wenn cols/rows == 1
             for col_idx in [1, cols] if cols > 1 else [1]:
-                x_base = margin_width + col_idx * tile_w + (col_idx - 1) * self.inner_spacing_mm
+                x_base = margin_width + col_idx * tile_w + (col_idx - 1) * self.inner_spacing
                 x_left = x_base - tile_w + trim_left
                 x_right = x_base - trim_right
 
@@ -194,7 +194,7 @@ class PageTiler:
 
             # Beide Seiten für rows
             for row_idx in [1, rows] if rows > 1 else [1]:
-                y_base = margin_height + row_idx * tile_h + (row_idx - 1) * self.inner_spacing_mm
+                y_base = margin_height + row_idx * tile_h + (row_idx - 1) * self.inner_spacing
                 y_top = y_base - tile_h + trim_top
                 y_bottom = y_base - trim_bottom
 
@@ -226,8 +226,8 @@ class PageTiler:
                 trim_top = tile.trim.y0 - tile.rect.y0
 
             for col in range(1, cols):
-                x_right = margin_width + col * tile_w + (col - 1) * self.inner_spacing_mm - trim_left
-                x_left_next = margin_width + (col + 1) * tile_w + col * self.inner_spacing_mm - tile_w + trim_left
+                x_right = margin_width + col * tile_w + (col - 1) * self.inner_spacing - trim_left
+                x_left_next = margin_width + (col + 1) * tile_w + col * self.inner_spacing - tile_w + trim_left
 
                 for x in [x_right, x_left_next]:
                     finale_page.draw_line((x, sixth_h), (x, margin_height - sixth_h),
@@ -236,8 +236,8 @@ class PageTiler:
                                           width=self.line_thickness, color=(0, 0, 0))
 
             for row in range(1, rows):
-                y_bottom = margin_height + row * tile_h + (row - 1) * self.inner_spacing_mm - trim_top
-                y_top_next = margin_height + (row + 1) * tile_h + row * self.inner_spacing_mm - tile_h + trim_top
+                y_bottom = margin_height + row * tile_h + (row - 1) * self.inner_spacing - trim_top
+                y_top_next = margin_height + (row + 1) * tile_h + row * self.inner_spacing - tile_h + trim_top
 
                 for y in [y_bottom, y_top_next]:
                     finale_page.draw_line((sixth_w, y), (margin_width - sixth_w, y),
