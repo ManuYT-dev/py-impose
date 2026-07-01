@@ -1,3 +1,11 @@
+from __future__ import annotations
+import pymupdf
+from pathlib import Path
+
+import logging
+logger = logging.getLogger(__name__)
+
+
 class PDFExporter:
     """Exports processed pages to a new PDF document."""
 

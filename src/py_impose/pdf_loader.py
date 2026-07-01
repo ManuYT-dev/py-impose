@@ -1,3 +1,12 @@
+from __future__ import annotations
+import pymupdf
+from pathlib import Path
+from io import BytesIO
+
+import logging
+logger = logging.getLogger(__name__)
+
+
 class PDFLoader:
     """Loads PDF files and extracts individual pages using PyMuPDF."""
 

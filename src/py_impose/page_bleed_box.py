@@ -1,5 +1,10 @@
+import pymupdf
+from src.py_impose.types.paper_types import PageSize
+from .page_resizer import PageResizer
+
+
 class PageBleedBox:
-    def __init__(self, page: pymupdf.Page, doc: pymupdf.Document, default_bleed_pt: float = paper_types.PageSize.cm_to_points(5)):
+    def __init__(self, page: pymupdf.Page, doc: pymupdf.Document, default_bleed_pt: float = PageSize.cm_to_points(5)):
         self.page = page
         self.doc = doc
         self.default_bleed_pt = default_bleed_pt
@@ -16,7 +21,7 @@ class PageBleedBox:
         new_w = trim.width + 2 * bleed
         new_h = trim.height + 2 * bleed
 
-        self.page = PageResizer(paper_types.PageSize(width=int(round(new_w)), height=int(round(new_h)))).resize_page(
+        self.page = PageResizer(PageSize(width=int(round(new_w)), height=int(round(new_h)))).resize_page(
             self.page)
 
         doc = self.page.parent

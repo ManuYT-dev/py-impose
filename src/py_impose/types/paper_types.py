@@ -48,17 +48,17 @@ class PageSize:
 
         t_w, t_h = sorted([self.width, self.height])
 
-        for name, value in PaperTypes:
-            s_w, s_h = sorted([value.width, value.height])
+        for paper in PaperTypes:
+            s_w, s_h = sorted([paper.value.width, paper.value.height])
 
             # Euklidische Distanz berechnen
             distance = math.sqrt((t_w - s_w) ** 2 + (t_h - s_h) ** 2)
 
             if distance < min_distance:
                 min_distance = distance
-                best_match = name
+                best_match = paper.name
 
-        return best_match, min_distance
+        return best_match
 
 
 class PaperTypes(Enum):

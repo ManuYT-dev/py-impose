@@ -1,9 +1,15 @@
+from __future__ import annotations
 import pymupdf
+from .types import PageSize, Rect
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 class PageResizer:
     """Resizes individual pages to match a target paper size."""
 
-    def __init__(self, target_size: paper_types.PageSize):
+    def __init__(self, target_size: PageSize):
         try:
             self.target_width = float(target_size.width)
             self.target_height = float(target_size.height)

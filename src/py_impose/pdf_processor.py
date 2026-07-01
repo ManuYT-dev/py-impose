@@ -1,3 +1,19 @@
+from __future__ import annotations
+import pymupdf
+from pathlib import Path
+from io import BytesIO
+
+from .types import PageSize, PaperTypes
+from .page_bleed_box import PageBleedBox
+from .page_resizer import PageResizer
+from .page_tiler import PageTiler
+from .pdf_exporter import PDFExporter
+from .pdf_loader import PDFLoader
+
+import logging
+logger = logging.getLogger(__name__)
+
+
 class PDFProcessor:
     """High level pipeline for loading, resizing, tiling and exporting PDFs."""
 
@@ -5,8 +21,8 @@ class PDFProcessor:
             self,
             input_path: str | Path | BytesIO,
             output_path: str | Path,
-            tile_to: paper_types.PageSize = paper_types.SRA3,
-            resize_to: paper_types.PageSize | None = None,
+            tile_to: PageSize = PaperTypes.SRA3,
+            resize_to: PageSize | None = None,
             anzahl: int = 1,
             farbe: bool = False,
             beidseitig: bool = False,
@@ -27,63 +43,6 @@ class PDFProcessor:
         self._bleed_kwargs = {}
         self._tile_kwargs = {}
         self._export_kwargs = {}
-
-    # ------------------------------------------------------------------ #
-    #  Factory                                                             #
-    # ------------------------------------------------------------------ #
-
-    @classmethod
-    def from_auftrag(
-            cls,
-            auftrag: Auftrag,
-            email: Email,
-            output_path: str | Path,
-            tile_to: paper_types.PageSize = paper_types.SRA3,
-    ) -> "PDFProcessor | None":
-        """Erstellt einen PDFProcessor direkt aus einem Auftrag und der zugehörigen Email.
-
-        Returns None wenn kein passender Anhang gefunden wurde.
-        """
-        attachment: Attachment | None = email.get_attachment_for(auftrag)
-        if attachment is None or attachment.page_size(0) is None:
-            logger.error(
-                "[PDFProcessor] from_auftrag: no attachment found for '%s'",
-                auftrag.Dateiname,
-            )
-            return None
-
-        # Berechnung welches A format man hat mit Schutz, falls width größer height ist
-        page_size = attachment.page_size(0)
-        temp_size = paper_types.PageSize(min(page_size.to_list()), max(page_size.to_list()))
-        name, dist = paper_types.find_closest_size(temp_size)
-
-        return cls(
-            input_path=attachment.as_stream(),
-            output_path=output_path,
-            tile_to=tile_to,
-            resize_to=paper_types.Paper_Sizes.get(auftrag.Papier_Groeße, paper_types.Paper_Sizes[name]),
-            anzahl=auftrag.Anzahl,
-            farbe=auftrag.Farbe,
-            beidseitig=auftrag.Beidseitig,
-            bindung=auftrag.Bindung,
-        )
-
-    @classmethod
-    def from_email(
-            cls,
-            email: Email,
-            output_dir: str | Path,
-            tile_to: paper_types.PageSize = paper_types.SRA3,
-    ) -> list["PDFProcessor"]:
-        """Erstellt einen PDFProcessor pro Auftrag in der Email."""
-        output_dir = Path(output_dir)
-        processors = []
-        for auftrag in email.Auftraege:
-            output_path = output_dir / f"{Path(auftrag.Dateiname or 'output').stem}_tiled.pdf"
-            processor = cls.from_auftrag(auftrag, email, output_path, tile_to)
-            if processor:
-                processors.append(processor)
-        return processors
 
     # ------------------------------------------------------------------ #
     #  Pipeline                                                            #
@@ -153,7 +112,7 @@ class PDFProcessor:
             new_pages = []
             for page in self.pages:
                 doc = page.parent
-                pb = PageBleedBox(page, doc, self._bleed_kwargs.get("default_bleed_pt", paper_types.PageSize.mm_to_points(5)))
+                pb = PageBleedBox(page, doc, self._bleed_kwargs.get("default_bleed_pt", PageSize.mm_to_points(5)))
                 new_pages.append(pb.page)  # neue Page zurückschreiben
             self.pages = new_pages
         except Exception as e:
@@ -169,8 +128,8 @@ class PDFProcessor:
             output_size = self._tile_kwargs.get("output_size") or self.tile_to
             tiler = PageTiler(
                 output_size,
-                inner_spacing=self._tile_kwargs.get("inner_spacing"),
-                outer_margin=self._tile_kwargs.get("outer_margin"),
+                inner_spacing_mm=self._tile_kwargs.get("inner_spacing_mm"),
+                outer_margin_mm=self._tile_kwargs.get("outer_margin_mm"),
                 line_thickness=self._tile_kwargs.get("line_thickness"),
                 draw_lines=self._tile_kwargs.get("draw_lines", True)
             )
