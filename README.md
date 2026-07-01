@@ -13,8 +13,12 @@ I originally built `py-impose` to handle automated imposition for web-to-print o
 
 ## Installation
 
-You can install `py-impose` directly from source:
+You can install `py-impose` directly with [PIP](https://pypi.org/project/py-impose/):
+```bash
+pip install py-impose
+```
 
+or build it from source:
 ```bash
 git clone [https://github.com/ManuYT-dev/py-impose.git](https://github.com/ManuYT-dev/py-impose.git)
 cd py-impose
@@ -64,8 +68,6 @@ python debug/debug_ui.py
 ## Contributing
 
 Contributions are always welcome! If you find a bug or have an idea for a new feature (like new binding logic or paper formats), feel free to open an issue or submit a pull request.
-
-## License
 
 ## License
 
