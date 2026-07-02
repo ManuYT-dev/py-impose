@@ -220,3 +220,4 @@ __marimo__/
 .streamlit/secrets.toml
 
 dist
+src/py_impose.egg-info

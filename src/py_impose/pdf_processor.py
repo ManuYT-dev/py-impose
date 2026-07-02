@@ -64,9 +64,9 @@ class PDFProcessor:
         self._load_kwargs = kwargs or self._load_kwargs
         try:
             self.pages = PDFLoader(self.input_path).load(
-                self._load_kwargs.get("start"),
-                self._load_kwargs.get("end"),
-                self._load_kwargs.get("steps"),
+                self._get_with_log(self._load_kwargs, "start"),
+                self._get_with_log(self._load_kwargs, "end"),
+                self._get_with_log(self._load_kwargs, "steps")
             )
             if not self.pages:
                 logger.warning("[PDFProcessor] load: no pages were loaded.")
@@ -76,7 +76,7 @@ class PDFProcessor:
 
     def resize(self, **kwargs) -> "PDFProcessor":
         self._resize_kwargs = kwargs or self._resize_kwargs
-        size = self._resize_kwargs.get("size") or self.resize_to
+        size = self._get_with_log(self._resize_kwargs, "size", self.resize_to)
 
         if size is None:
             return self
@@ -103,8 +103,8 @@ class PDFProcessor:
             for page in self.pages:
                 doc = page.parent
 
-                bleed_val = self._bleed_kwargs.get("default_bleed", PageSize.mm_to_points(5))
-                scale_val = self._bleed_kwargs.get("scaleForBleed", True)
+                bleed_val = self._get_with_log(self._bleed_kwargs, "default_bleed", PageSize.mm_to_points(5))
+                scale_val = self._get_with_log(self._bleed_kwargs, "scaleForBleed", True)
                 pb = PageBleedBox(page, doc, bleed_val, scale_val)
 
                 new_pages.append(pb.page)  # neue Page zurückschreiben
@@ -119,13 +119,13 @@ class PDFProcessor:
         if not self.pages:
             return self
         try:
-            output_size = self._tile_kwargs.get("output_size") or self.tile_to
+            output_size = self._get_with_log(self._tile_kwargs, "output_size", self.tile_to)
             tiler = PageTiler(
                 output_size,
-                inner_spacing=self._tile_kwargs.get("inner_spacing"),
-                outer_margin=self._tile_kwargs.get("outer_margin"),
-                line_thickness=self._tile_kwargs.get("line_thickness"),
-                draw_lines=self._tile_kwargs.get("draw_lines", True)
+                inner_spacing=self._get_with_log(self._tile_kwargs, "inner_spacing"),
+                outer_margin=self._get_with_log(self._tile_kwargs, "outer_margin"),
+                line_thickness=self._get_with_log(self._tile_kwargs, "line_thickness"),
+                draw_lines=self._get_with_log(self._tile_kwargs, "draw_lines", True)
             )
             self.pages = tiler.tile_pages(
                 self.pages,
@@ -144,7 +144,7 @@ class PDFProcessor:
         try:
             exporter = PDFExporter()
             exporter.add_pages(self.pages)
-            exporter.write(self._export_kwargs.get("output_path") or self.output_path)
+            exporter.write(self._get_with_log(self._export_kwargs, "output_path", self.output_path))
         except Exception as e:
             logger.error("[PDFProcessor] export failed: %s", e)
         return self
@@ -153,3 +153,11 @@ class PDFProcessor:
         """Run the full processing pipeline using any pre-configured settings."""
         logger.info("[PDFProcessor] Starting pipeline for '%s'", self.input_path)
         return self.load().resize().bleed().tile().export()
+
+    @staticmethod
+    def _get_with_log(data: dict, key: str, default: any = None) -> any:
+        """Gets a value out of a dict, or logs an error if the key does not exist."""
+        if key not in data:
+            logger.warning("[PDFProcessor] No value found, using default for '%s'", key)
+            return default
+        return data.get(key)
