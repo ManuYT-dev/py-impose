@@ -53,6 +53,8 @@ Passed using the `group__key` syntax (e.g., `processor.update_value(tile__draw_l
 | **load** | `start` | `int` | Page number to start loading from. |
 | **load** | `end` | `int` | Page number to stop loading at. |
 | **load** | `steps` | `int` | Step size for loading pages (e.g., every 2nd page). |
+| **load** | `image_quality` | `int` | JPEG conversion quality (1-100) for image files. Defaults to 85. |
+| **load** | `optimize_images` | `bool` | Whether to perform lossless compression on images. Defaults to `True`. |
 | **resize**| `size` | `PageSize` | Target size to scale the original pages to. |
 | **bleed** | `default_bleed` | `float` | Bleed area added to the page edges (in **pt**). |
 | **bleed** | `scaleForBleed` | `bool` | Whether to scale the content to fit the new bleed box. |
@@ -88,6 +90,10 @@ processor.update_value(
     beidseitig=True,
     farbe=True,
     
+    # Load configuration
+    load__image_quality=85,
+    load__optimize_images=True,
+    
     # Bleed configuration
     bleed__default_bleed=PageSize.mm_to_points(3.0),
     bleed__scaleForBleed=False,
@@ -101,3 +107,4 @@ processor.update_value(
 
 # 3. Execute
 processor.run()
+```

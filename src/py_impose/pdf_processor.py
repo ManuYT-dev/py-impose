@@ -8,7 +8,7 @@ from .page_bleed_box import PageBleedBox
 from .page_resizer import PageResizer
 from .page_tiler import PageTiler
 from .pdf_exporter import PDFExporter
-from .pdf_loader import PDFLoader
+from .file_loader import FileLoader
 
 import logging
 logger = logging.getLogger(__name__)
@@ -63,7 +63,16 @@ class PDFProcessor:
     def load(self, **kwargs) -> "PDFProcessor":
         self._load_kwargs = kwargs or self._load_kwargs
         try:
-            self.pages = PDFLoader(self.input_path).load(
+            img_quality = self._get_with_log(self._load_kwargs, "image_quality", 85)
+            img_optimize = self._get_with_log(self._load_kwargs, "optimize_images", True)
+
+            loader = FileLoader(
+                self.input_path,
+                image_quality=img_quality,
+                optimize_images=img_optimize
+            )
+
+            self.pages = loader.load(
                 self._get_with_log(self._load_kwargs, "start"),
                 self._get_with_log(self._load_kwargs, "end"),
                 self._get_with_log(self._load_kwargs, "steps")
@@ -107,7 +116,7 @@ class PDFProcessor:
                 scale_val = self._get_with_log(self._bleed_kwargs, "scaleForBleed", True)
                 pb = PageBleedBox(page, doc, bleed_val, scale_val)
 
-                new_pages.append(pb.page)  # neue Page zurückschreiben
+                new_pages.append(pb.page)  # write back new page
             self.pages = new_pages
         except Exception as e:
             logger.error("[PDFProcessor] bleed failed: %s", e)

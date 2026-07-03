@@ -1,5 +1,5 @@
 import pymupdf
-from src.py_impose.types.paper_types import PageSize
+from .types import PageSize
 from .page_resizer import PageResizer
 
 

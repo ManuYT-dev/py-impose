@@ -11,6 +11,11 @@ I originally built `py-impose` to handle automated imposition for web-to-print o
 - **Dynamic Configuration:** Use a unified `update_value()` method to tweak cut lines, margins, and bleed on the fly.
 - **Native PDF Units:** Built entirely around standard PDF points (pt) for absolute precision, with built-in helpers for millimeter conversion.
 
+## Prerequisites
+
+Before using `py-impose`, please ensure you have the following installed on your system:
+- **LibreOffice:** Required for the headless conversion of non-PDF file formats (such as `.docx`) into standard PDFs before they enter the processing pipeline. 
+
 ## Installation
 
 You can install `py-impose` directly with [PIP](https://pypi.org/project/py-impose/):
@@ -18,14 +23,15 @@ You can install `py-impose` directly with [PIP](https://pypi.org/project/py-impo
 pip install py-impose
 ```
 
-or build it from source:
+or build it from source and install the required dependencies using the provided `requirements.txt`:
 ```bash
 git clone [https://github.com/ManuYT-dev/py-impose.git](https://github.com/ManuYT-dev/py-impose.git)
 cd py-impose
+pip install -r requirements.txt
 pip install -e .
 ```
 
-*Note: This library requires `pymupdf` to handle the heavy lifting of PDF manipulation.*
+*Note: This library relies on `pymupdf` to handle the heavy lifting of PDF manipulation.*
 
 ## Quick Start
 
