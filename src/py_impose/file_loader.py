@@ -119,12 +119,12 @@ class FileLoader:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_dir = Path(temp_dir)
                 temp_docx = temp_dir / "input.docx"
-                temp_pdf = temp_dir / "input.pdf"
 
                 temp_docx.write_bytes(buf.getvalue())
-                self._convert_docx_libreoffice(temp_docx, temp_pdf)
+                self._convert_docx_libreoffice(temp_docx, temp_dir)
 
-                returning_buf = BytesIO(temp_pdf.read_bytes())
+                actual_pdf_path = temp_dir / "input.pdf"
+                returning_buf = BytesIO(actual_pdf_path.read_bytes())
 
             returning_buf.seek(0)
             return returning_buf
@@ -158,10 +158,10 @@ class FileLoader:
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_dir = Path(temp_dir)
-                temp_pdf = temp_dir / f"converted_{path_obj.stem}.pdf"
-                self._convert_docx_libreoffice(path_obj, temp_pdf)
+                self._convert_docx_libreoffice(path_obj, temp_dir)
 
-                returning_buf = BytesIO(temp_pdf.read_bytes())
+                actual_pdf_path = temp_dir / f"{path_obj.stem}.pdf"
+                returning_buf = BytesIO(actual_pdf_path.read_bytes())
 
             returning_buf.seek(0)
             return returning_buf
