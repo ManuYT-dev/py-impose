@@ -9,7 +9,7 @@ src_path = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
 import logging
-from py_impose import PDFProcessor, PaperTypes, PageSize
+from py_impose import PDFProcessor, PaperTypes, PageSize, BindingType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -81,7 +81,7 @@ class ImposeUI:
         self.entry_bleed.insert(0, "20.0")
         self.entry_bleed.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-        ttk.Label(self.config_frame, text="Liniendicke:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+        ttk.Label(self.config_frame, text="Liniendicke (mm):").grid(row=3, column=0, sticky="e", padx=5, pady=5)
         self.entry_line_thick = ttk.Entry(self.config_frame, width=10)
         self.entry_line_thick.insert(0, "0.5")
         self.entry_line_thick.grid(row=3, column=1, sticky="w", padx=5, pady=5)
@@ -104,10 +104,41 @@ class ImposeUI:
         self.check_lines = ttk.Checkbutton(self.config_frame, text="Schnittlinien zeichnen", variable=self.draw_lines)
         self.check_lines.grid(row=7, column=1, sticky="w", padx=5, pady=3)
 
+        # --- Optional Binding / Impose Settings Frame ---
+        self.impose_frame = ttk.LabelFrame(main_frame, text=" Bindung (Optional, für Bücher/Flyer) ", padding="10")
+        self.impose_frame.grid(row=2, column=0, columnspan=3, pady=(0, 15), sticky="ew")
+
+        ttk.Label(self.impose_frame, text="Bindungstyp:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        self.combo_binding = ttk.Combobox(self.impose_frame, values=[b.name for b in BindingType],
+                                          state="readonly", width=15)
+        self.combo_binding.set(BindingType.NORMAL.name)
+        self.combo_binding.grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        self.combo_binding.bind("<<ComboboxSelected>>", self._on_binding_change)
+
+        ttk.Label(self.impose_frame, text="Seiten pro Bogen:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        self.entry_pages_per_sheet = ttk.Entry(self.impose_frame, width=10)
+        self.entry_pages_per_sheet.insert(0, "2")
+        self.entry_pages_per_sheet.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        self.label_fold_style = ttk.Label(self.impose_frame, text="Faltart (nur Flyer):")
+        self.label_fold_style.grid(row=2, column=0, sticky="e", padx=5, pady=5)
+        self.combo_fold_style = ttk.Combobox(self.impose_frame, values=["accordion", "letter"],
+                                             state="readonly", width=15)
+        self.combo_fold_style.set("accordion")
+        self.combo_fold_style.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+        self.label_panel_shrink = ttk.Label(self.impose_frame, text="Panel-Verkleinerung (mm):")
+        self.label_panel_shrink.grid(row=3, column=0, sticky="e", padx=5, pady=5)
+        self.entry_panel_shrink = ttk.Entry(self.impose_frame, width=10)
+        self.entry_panel_shrink.insert(0, "2.0")
+        self.entry_panel_shrink.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+        self._on_binding_change()  # set initial enabled/disabled state
+
         # --- Optional Image Settings Frame ---
         self.image_settings_frame = ttk.LabelFrame(main_frame, text=" Bildeinstellungen (Optional, nur für Bilder) ",
                                                    padding="10")
-        self.image_settings_frame.grid(row=2, column=0, columnspan=3, pady=(0, 15), sticky="ew")
+        self.image_settings_frame.grid(row=3, column=0, columnspan=3, pady=(0, 15), sticky="ew")
 
         self.image_quality_var = tk.IntVar(value=85)
         self.optimize_images_var = tk.BooleanVar(value=True)
@@ -137,10 +168,24 @@ class ImposeUI:
         self.optimize_check.grid(row=1, column=1, columnspan=2, sticky="w", padx=5, pady=3)
 
         self.btn_start = ttk.Button(main_frame, text="PROZESS STARTEN", command=self.run_process)
-        self.btn_start.grid(row=3, column=0, columnspan=3, pady=(10, 5), ipady=5, sticky="ew")
+        self.btn_start.grid(row=4, column=0, columnspan=3, pady=(10, 5), ipady=5, sticky="ew")
+
+    def _on_binding_change(self, _event=None) -> None:
+        """Fold style / panel shrink only make sense for FLYER binding — grey them out otherwise."""
+        is_flyer = self.combo_binding.get() == BindingType.FLYER.name
+        state = "readonly" if is_flyer else "disabled"
+        entry_state = "normal" if is_flyer else "disabled"
+        self.combo_fold_style.configure(state=state)
+        self.entry_panel_shrink.configure(state=entry_state)
 
     def browse_input(self) -> None:
-        file = filedialog.askopenfilename(filetypes=[("PDF Dateien", "*.pdf"), ("All files", "*")])
+        file = filedialog.askopenfilename(filetypes=[
+            ("Alle unterstützten Dateien", "*.pdf *.docx *.png *.jpg *.jpeg *.bmp *.tiff"),
+            ("PDF Dateien", "*.pdf"),
+            ("Word Dokumente", "*.docx"),
+            ("Bilddateien", "*.png *.jpg *.jpeg *.bmp *.tiff"),
+            ("Alle Dateien", "*.*"),
+        ])
         if file:
             self.entry_input.delete(0, tk.END)
             self.entry_input.insert(0, file)
@@ -173,9 +218,18 @@ class ImposeUI:
             inner_spacing_pt = PageSize.mm_to_points(float(self.entry_inner.get()))
             outer_margin_pt = PageSize.mm_to_points(float(self.entry_margin.get()))
 
+            binding = BindingType[self.combo_binding.get()]
+            pages_per_sheet = int(self.entry_pages_per_sheet.get())
+            fold_style = self.combo_fold_style.get()
+            panel_shrink_pt = PageSize.mm_to_points(float(self.entry_panel_shrink.get()))
+
             processor.update_value(
                 load__image_quality=self.image_quality_var.get(),
                 load__optimize_images=self.optimize_images_var.get(),
+                impose__binding=binding,
+                impose__pages_per_sheet=pages_per_sheet,
+                impose__fold_style=fold_style,
+                impose__panel_shrink=panel_shrink_pt,
                 tile__line_thickness=line_thickness_pt,
                 tile__outer_margin=outer_margin_pt,
                 tile__inner_spacing=inner_spacing_pt,

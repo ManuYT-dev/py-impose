@@ -3,9 +3,10 @@ import pymupdf
 from pathlib import Path
 from io import BytesIO
 
-from .types import PageSize, PaperTypes
+from .types import PageSize, PaperTypes, BindingType
 from .page_bleed_box import PageBleedBox
 from .page_resizer import PageResizer
+from .page_imposer import PageImposer
 from .page_tiler import PageTiler
 from .pdf_exporter import PDFExporter
 from .file_loader import FileLoader
@@ -23,7 +24,7 @@ class PDFProcessor:
             output_path: str | Path,
             tile_to: PageSize = PaperTypes.SRA3,
             resize_to: PageSize | None = None,
-            bindung: str | None = None,
+            bindung: BindingType = BindingType.NORMAL,
     ):
         self.input_path = input_path
         self.output_path = output_path
@@ -34,6 +35,7 @@ class PDFProcessor:
 
         self._load_kwargs = {}
         self._resize_kwargs = {}
+        self._impose_kwargs = {}
         self._bleed_kwargs = {}
         self._tile_kwargs = {}
         self._export_kwargs = {}
@@ -42,6 +44,7 @@ class PDFProcessor:
         mapping = {
             "load": self._load_kwargs,
             "resize": self._resize_kwargs,
+            "impose": self._impose_kwargs,
             "bleed": self._bleed_kwargs,
             "tile": self._tile_kwargs,
             "export": self._export_kwargs,
@@ -98,6 +101,27 @@ class PDFProcessor:
             self.pages = PageResizer(size).resize_pages(self.pages)
         except Exception as e:
             logger.error("[PDFProcessor] resize failed: %s", e)
+        return self
+
+    def impose(self, **kwargs) -> "PDFProcessor":
+        self._impose_kwargs = kwargs or self._impose_kwargs
+        if not self.pages:
+            logger.warning("[PDFProcessor] impose: no pages to process.")
+            return self
+        try:
+            binding = self._get_with_log(self._impose_kwargs, "binding", self.bindung or BindingType.NORMAL)
+            if isinstance(binding, str):
+                binding = BindingType(binding.lower())
+
+            imposer = PageImposer(
+                binding=binding,
+                pages_per_sheet=self._get_with_log(self._impose_kwargs, "pages_per_sheet", 2),
+                fold_style=self._get_with_log(self._impose_kwargs, "fold_style", "accordion"),
+                panel_shrink=self._get_with_log(self._impose_kwargs, "panel_shrink", PageSize.mm_to_points(2)),
+            )
+            self.pages = imposer.impose_pages(self.pages)
+        except Exception as e:
+            logger.error(f"[PDFProcessor] impose failed: {e}")
         return self
 
     def bleed(self, **kwargs) -> "PDFProcessor":
@@ -161,7 +185,7 @@ class PDFProcessor:
     def run(self) -> "PDFProcessor":
         """Run the full processing pipeline using any pre-configured settings."""
         logger.info("[PDFProcessor] Starting pipeline for '%s'", self.input_path)
-        return self.load().resize().bleed().tile().export()
+        return self.load().resize().impose().bleed().tile().export()
 
     @staticmethod
     def _get_with_log(data: dict, key: str, default: any = None) -> any:

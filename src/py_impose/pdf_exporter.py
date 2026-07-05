@@ -12,6 +12,17 @@ class PDFExporter:
     def __init__(self):
         self.output_document = pymupdf.open()
 
+    def clear_pages(self):
+        try:
+            if self.output_document is not None and self.output_document.page_count > 0:
+                self.output_document.delete_pages(0, self.output_document.page_count - 1)
+            else:
+                logger.warning("[PDFExporter] clear_pages: The document to clear the pages from either doesnt exist or has no pages")
+        except AttributeError:
+            logger.error("[PDFExporter] clear_pages: invalid page object.")
+        except Exception as e:
+            logger.error(f"[PDFExporter] clear_pages: failed to clear: {e}")
+
     def add_page(self, page: pymupdf.Page) -> None:
         try:
             self.output_document.insert_pdf(page.parent, from_page=page.number, to_page=page.number)

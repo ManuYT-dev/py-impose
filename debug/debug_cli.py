@@ -5,7 +5,7 @@ src_path = Path(__file__).resolve().parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
 import logging
-from py_impose import PDFProcessor, PaperTypes
+from py_impose import PDFProcessor, PaperTypes, BindingType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,7 +18,7 @@ def run_local_test():
 
     current_dir = Path(__file__).resolve().parent
 
-    input_file = current_dir / "Files" / "Inputs" / "test_input.jpg"
+    input_file = current_dir / "Files" / "Inputs" / "Worum geht.docx"
     output_file = current_dir / "Files" / "Outputs" / "output.pdf"
 
     if not input_file.exists():
@@ -35,6 +35,9 @@ def run_local_test():
     processor.update_value(
         load__image_quality=85,
         load__optimize_images=True,
+
+        impose__binding=BindingType.BOOK,
+        impose__pages_per_sheet=3,
 
         tile__inner_spacing=2,
         tile__line_thickness=2,

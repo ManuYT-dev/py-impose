@@ -5,7 +5,6 @@ class Rect(pymupdf.Rect):
     def copy(self):
         return Rect(self)
 
-
 class Tile:
     def __init__(self, page: pymupdf.Page):
         self._page = page

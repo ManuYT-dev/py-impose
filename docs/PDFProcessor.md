@@ -1,6 +1,6 @@
 # PDFProcessor – Reference Guide
 
-The `PDFProcessor` is the core pipeline class of `py-impose`. It allows you to load, resize, add bleed, tile, and export PDF documents in a clean, chainable workflow.
+The `PDFProcessor` is the core pipeline class of `py-impose`. It allows you to load, resize, impose, add bleed, tile, and export PDF documents in a clean, chainable workflow.
 
 ## Basic Initialization
 
@@ -25,8 +25,10 @@ The processor uses a chainable API. You can run individual steps or execute the 
 processor.run()
 
 # OR run steps manually if you need custom logic in between:
-processor.load().resize().bleed().tile().export()
+processor.load().resize().impose().bleed().tile().export()
 ```
+
+> **Note on ordering:** `impose()` always runs after `resize()` and before `bleed()`. Pages need to be the same size before they're reordered/merged into spreads, and bleed needs to be calculated on the final merged sheet — not on the individual sub-pages that make it up — or it ends up padding into the middle of a spread instead of the sheet's real outer edge.
 
 ---
 
@@ -36,14 +38,14 @@ The true power of the `PDFProcessor` comes from its `update_value(**kwargs)` met
 
 Use the `group__key` syntax to target specific pipeline modules. 
 
-> **⚠️ Important Note on Units:** All layout measurements (margins, spacing, line thickness, bleed) are expected in **Points (pt)**, not millimeters! You can use `PageSize.mm_to_points(mm_value)` to convert them easily.
+> **⚠️ Important Note on Units:** All layout measurements (margins, spacing, line thickness, bleed, panel shrink) are expected in **Points (pt)**, not millimeters! You can use `PageSize.mm_to_points(mm_value)` to convert them easily.
 
 ### 1. Global Attributes
 Passed directly (e.g., `processor.update_value(farbe=True)`).
 
 | Key | Type | Description |
 | :--- | :--- | :--- |
-| `bindung` | `str` | Binding type (if applicable). |
+| `bindung` | `BindingType \| str` | Binding type: `NORMAL` (default), `BOOK`, or `FLYER`. Only used as a fallback if `impose__binding` isn't set. |
 
 ### 2. Pipeline Stage Settings
 Passed using the `group__key` syntax (e.g., `processor.update_value(tile__draw_lines=False)`).
@@ -56,7 +58,11 @@ Passed using the `group__key` syntax (e.g., `processor.update_value(tile__draw_l
 | **load** | `image_quality` | `int` | JPEG conversion quality (1-100) for image files. Defaults to 85. |
 | **load** | `optimize_images` | `bool` | Whether to perform lossless compression on images. Defaults to `True`. |
 | **resize**| `size` | `PageSize` | Target size to scale the original pages to. |
-| **bleed** | `default_bleed` | `float` | Bleed area added to the page edges (in **pt**). |
+| **impose**| `binding` | `BindingType \| str` | `NORMAL` (no-op, default), `BOOK` (saddle-stitch), or `FLYER` (panel fold). |
+| **impose**| `pages_per_sheet` | `int` | Panels per sheet. Only relevant for `FLYER` — `BOOK` always pads to a multiple of 4 internally, regardless of this value. Defaults to `2`. |
+| **impose**| `fold_style` | `str` | `FLYER` only: `"accordion"` (equal panel widths) or `"letter"` (one panel shrunk so it tucks inside the others). Defaults to `"accordion"`. |
+| **impose**| `panel_shrink` | `float` | `FLYER` + `"letter"` only: how much narrower the tucked-in panel is, in **pt**. Defaults to `PageSize.mm_to_points(2)`. |
+| **bleed** | `default_bleed` | `float` | Bleed area added to the page edges (in **pt**). Skipped automatically if a page already carries an explicit, designer-authored bleed box (including one inherited from imposition). |
 | **bleed** | `scaleForBleed` | `bool` | Whether to scale the content to fit the new bleed box. |
 | **tile** | `output_size` | `PageSize` | Target print sheet size (overrides `tile_to`). |
 | **tile** | `inner_spacing` | `float` | Gap between individual tiled pages (in **pt**). |
@@ -72,7 +78,7 @@ Passed using the `group__key` syntax (e.g., `processor.update_value(tile__draw_l
 Here is an example of setting up a complex print job using dynamic values:
 
 ```python
-from py_impose import PDFProcessor, PaperTypes, PageSize
+from py_impose import PDFProcessor, PaperTypes, PageSize, BindingType
 
 # Optional: Initialize logger if you want
 import logging
@@ -93,7 +99,10 @@ processor.update_value(
     # Load configuration
     load__image_quality=85,
     load__optimize_images=True,
-    
+
+    # Imposition configuration (booklet example)
+    impose__binding=BindingType.BOOK,
+
     # Bleed configuration
     bleed__default_bleed=PageSize.mm_to_points(3.0),
     bleed__scaleForBleed=False,
@@ -106,5 +115,17 @@ processor.update_value(
 )
 
 # 3. Execute
+processor.run()
+```
+
+### Flyer example (tri-fold, letter fold)
+
+```python
+processor.update_value(
+    impose__binding=BindingType.FLYER,
+    impose__pages_per_sheet=3,
+    impose__fold_style="letter",
+    impose__panel_shrink=PageSize.mm_to_points(2.0),
+)
 processor.run()
 ```
