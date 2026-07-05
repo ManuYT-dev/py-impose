@@ -17,11 +17,13 @@ class PageImposer:
         pages_per_sheet: int = 2,
         fold_style: str = "accordion",   # "accordion" | "letter" - only used for FLYER
         panel_shrink: float = PageSize.mm_to_points(2),  # only used for FLYER + "letter"
+        has_fold_margin: bool = False,
     ):
         self.binding = binding
         self.pages_per_sheet = pages_per_sheet
         self.fold_style = fold_style
         self.panel_shrink = panel_shrink
+        self.has_fold_margin = has_fold_margin
 
     def impose_pages(self, pages: list[pymupdf.Page]) -> list[pymupdf.Page]:
         if not pages:
@@ -58,11 +60,28 @@ class PageImposer:
         )
 
         last = pages[-1]
-        blanks: pymupdf.Page = []
+        blanks: list[pymupdf.Page] = []
         for _ in range(missing):
             blank_doc = pymupdf.open()
-            blanks.append(blank_doc.new_page(width=last.rect.width, height=last.rect.height))
+            blank_page: pymupdf.Page = blank_doc.new_page(width=last.rect.width, height=last.rect.height)
+            self._copy_boxes(last, blank_page)
+            blanks.append(blank_page)
         return pages + blanks
+
+    def _copy_boxes(self, source: pymupdf.Page, target: pymupdf.Page) -> None:
+        """Blank filler pages need the same BleedBox/TrimBox as the real
+        page they're padding next to. Otherwise, whichever side of a
+        spread a blank page lands on gets 0 inherited bleed while the
+        real content side gets the actual value - which is exactly the
+        "one edge is right, the other isn't" asymmetry this fixes.
+        """
+        if not self._has_explicit_bleedbox(source):
+            return  # source had no real bleed data either - nothing to copy
+
+        doc = target.parent
+        b, t = source.bleedbox, source.trimbox
+        doc.xref_set_key(target.xref, "BleedBox", f"[{b.x0} {b.y0} {b.x1} {b.y1}]")
+        doc.xref_set_key(target.xref, "TrimBox", f"[{t.x0} {t.y0} {t.x1} {t.y1}]")
 
     def _impose_book(self, pages: list[pymupdf.Page]) -> list[pymupdf.Page]:
         """Every physical sheet carries 4 logical pages (2 per side),
@@ -112,11 +131,20 @@ class PageImposer:
         x = 0.0
         for panel, w in zip(panels, widths):
             rect = Rect(x, 0, x + w, total_h)
-            new_page.show_pdf_page(rect, panel.parent, panel.number)
+            clip = self._panel_clip(panel, w)
+            new_page.show_pdf_page(rect, panel.parent, panel.number, clip=clip)
             x += w
 
         self._apply_inherited_bleed(new_page, distances, total_w, total_h)
         return new_page
+
+    def _panel_clip(self, page: pymupdf.Page, target_width: float) -> pymupdf.Rect:
+        full = page.rect
+        shrink = full.width - target_width
+        if shrink <= 0:
+            return full
+
+        return Rect(full.x0, full.y0, full.x1 - shrink, full.y1)
 
     def _has_explicit_bleedbox(self, page: pymupdf.Page) -> bool:
         raw = page.parent.xref_object(page.xref, compressed=False)
@@ -177,6 +205,11 @@ class PageImposer:
 
     def _panel_width(self, index: int, count: int, page: pymupdf.Page) -> float:
         base_width = page.rect.width
-        if self.binding == BindingType.FLYER and self.fold_style == "letter" and index == count - 2:
+        if (
+            self.binding == BindingType.FLYER
+            and self.fold_style == "letter"
+            and index == count - 2
+            and not self.has_fold_margin
+        ):
             return base_width - self.panel_shrink
         return base_width

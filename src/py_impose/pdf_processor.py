@@ -118,6 +118,7 @@ class PDFProcessor:
                 pages_per_sheet=self._get_with_log(self._impose_kwargs, "pages_per_sheet", 2),
                 fold_style=self._get_with_log(self._impose_kwargs, "fold_style", "accordion"),
                 panel_shrink=self._get_with_log(self._impose_kwargs, "panel_shrink", PageSize.mm_to_points(2)),
+                has_fold_margin=self._get_with_log(self._impose_kwargs, "has_fold_margin", False),
             )
             self.pages = imposer.impose_pages(self.pages)
         except Exception as e:

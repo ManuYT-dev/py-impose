@@ -50,26 +50,27 @@ Passed directly (e.g., `processor.update_value(farbe=True)`).
 ### 2. Pipeline Stage Settings
 Passed using the `group__key` syntax (e.g., `processor.update_value(tile__draw_lines=False)`).
 
-| Group | Key | Type | Description |
-| :--- | :--- | :--- | :--- |
-| **load** | `start` | `int` | Page number to start loading from. |
-| **load** | `end` | `int` | Page number to stop loading at. |
-| **load** | `steps` | `int` | Step size for loading pages (e.g., every 2nd page). |
-| **load** | `image_quality` | `int` | JPEG conversion quality (1-100) for image files. Defaults to 85. |
-| **load** | `optimize_images` | `bool` | Whether to perform lossless compression on images. Defaults to `True`. |
-| **resize**| `size` | `PageSize` | Target size to scale the original pages to. |
-| **impose**| `binding` | `BindingType \| str` | `NORMAL` (no-op, default), `BOOK` (saddle-stitch), or `FLYER` (panel fold). |
-| **impose**| `pages_per_sheet` | `int` | Panels per sheet. Only relevant for `FLYER` — `BOOK` always pads to a multiple of 4 internally, regardless of this value. Defaults to `2`. |
-| **impose**| `fold_style` | `str` | `FLYER` only: `"accordion"` (equal panel widths) or `"letter"` (one panel shrunk so it tucks inside the others). Defaults to `"accordion"`. |
-| **impose**| `panel_shrink` | `float` | `FLYER` + `"letter"` only: how much narrower the tucked-in panel is, in **pt**. Defaults to `PageSize.mm_to_points(2)`. |
-| **bleed** | `default_bleed` | `float` | Bleed area added to the page edges (in **pt**). Skipped automatically if a page already carries an explicit, designer-authored bleed box (including one inherited from imposition). |
-| **bleed** | `scaleForBleed` | `bool` | Whether to scale the content to fit the new bleed box. |
-| **tile** | `output_size` | `PageSize` | Target print sheet size (overrides `tile_to`). |
-| **tile** | `inner_spacing` | `float` | Gap between individual tiled pages (in **pt**). |
-| **tile** | `outer_margin` | `float` | Margin around the outside of the print sheet (in **pt**). |
-| **tile** | `line_thickness` | `float` | Thickness of the cutting/center lines (in **pt**). |
-| **tile** | `draw_lines` | `bool` | Toggle cut marks on or off (`True`/`False`). |
-| **export**| `output_path` | `str/Path` | Overrides the final output save location. |
+| Group | Key | Type                 | Description                                                                                                                                                                         |
+| :--- | :--- |:---------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **load** | `start` | `int`                | Page number to start loading from.                                                                                                                                                  |
+| **load** | `end` | `int`                | Page number to stop loading at.                                                                                                                                                     |
+| **load** | `steps` | `int`                | Step size for loading pages (e.g., every 2nd page).                                                                                                                                 |
+| **load** | `image_quality` | `int`                | JPEG conversion quality (1-100) for image files. Defaults to 85.                                                                                                                    |
+| **load** | `optimize_images` | `bool`               | Whether to perform lossless compression on images. Defaults to `True`.                                                                                                              |
+| **resize**| `size` | `PageSize`           | Target size to scale the original pages to.                                                                                                                                         |
+| **impose**| `binding` | `BindingType \| str` | `NORMAL` (no-op, default), `BOOK` (saddle-stitch), or `FLYER` (panel fold).                                                                                                         |
+| **impose**| `pages_per_sheet` | `int`                | Panels per sheet. Only relevant for `FLYER` — `BOOK` always pads to a multiple of 4 internally, regardless of this value. Defaults to `2`.                                          |
+| **impose**| `fold_style` | `str`                | `FLYER` only: `"accordion"` (equal panel widths) or `"letter"` (one panel shrunk so it tucks inside the others). Defaults to `"accordion"`.                                         |
+| **impose**| `panel_shrink` | `float`              | `FLYER` + `"letter"` only: how much narrower the tucked-in panel is, in **pt**. Defaults to `PageSize.mm_to_points(2)`.                                                             |
+| **impose**| `has_fold_margin` | `bool`               | `FLYER` + `"letter"` only: If the flyer already has a fold_margin build into the design or not. Defaults to `"False"`.                                                              |
+| **bleed** | `default_bleed` | `float`              | Bleed area added to the page edges (in **pt**). Skipped automatically if a page already carries an explicit, designer-authored bleed box (including one inherited from imposition). |
+| **bleed** | `scaleForBleed` | `bool`               | Whether to scale the content to fit the new bleed box.                                                                                                                              |
+| **tile** | `output_size` | `PageSize`           | Target print sheet size (overrides `tile_to`).                                                                                                                                      |
+| **tile** | `inner_spacing` | `float`              | Gap between individual tiled pages (in **pt**).                                                                                                                                     |
+| **tile** | `outer_margin` | `float`              | Margin around the outside of the print sheet (in **pt**).                                                                                                                           |
+| **tile** | `line_thickness` | `float`              | Thickness of the cutting/center lines (in **pt**).                                                                                                                                  |
+| **tile** | `draw_lines` | `bool`               | Toggle cut marks on or off (`True`/`False`).                                                                                                                                        |
+| **export**| `output_path` | `str/Path`           | Overrides the final output save location.                                                                                                                                           |
 
 ---
 
