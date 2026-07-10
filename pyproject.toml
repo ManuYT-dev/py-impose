@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [
     "pymupdf>=1.23.0",
+    "Pillow>=12.3.0"
 ]
 
 [project.urls]
